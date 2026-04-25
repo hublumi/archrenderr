@@ -128,6 +128,10 @@ Create a hyper-realistic professional studio product photo. The product must mat
       response_format: "b64_json",
     });
 
+    if (!imageResponse.data || imageResponse.data.length === 0) {
+      throw new Error("A OpenAI não retornou dados de imagem.");
+    }
+
     const b64Json = imageResponse.data[0].b64_json;
     if (!b64Json) throw new Error("A OpenAI não retornou a imagem base64.");
 

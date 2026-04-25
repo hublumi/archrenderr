@@ -136,7 +136,7 @@ export default function Home() {
           setPixData({
             qrCode: result.qrCode,
             qrCodeBase64: result.qrCodeBase64 || '',
-            id: result.id
+            id: result.id as number
           });
           setShowPixCode(true);
         } else {
