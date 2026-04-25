@@ -1,26 +1,85 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-on-primary: #f2f9fb;
+  --color-on-surface: #29343a;
+  --color-on-error: #fff7f6;
+  --color-secondary: #50616e;
+  --color-primary-fixed: #dde4e6;
+  --color-tertiary-dim: #4b545a;
+  --color-secondary-fixed-dim: #c5d7e6;
+  --color-error-container: #fe8983;
+  --color-on-primary-fixed: #394043;
+  --color-tertiary-fixed: #e5eff7;
+  --color-primary: #586062;
+  --color-tertiary: #576067;
+  --color-primary-fixed-dim: #cfd6d8;
+  --color-on-secondary-fixed-variant: #4d5e6b;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-primary-fixed-variant: #565d5f;
+  --color-surface-container: #e8eff4;
+  --color-surface-bright: #f7f9fc;
+  --color-secondary-fixed: #d3e5f5;
+  --color-secondary-container: #d3e5f5;
+  --color-on-secondary-container: #435461;
+  --color-inverse-primary: #f1f8fa;
+  --color-surface-tint: #586062;
+  --color-outline: #717c84;
+  --color-surface-dim: #cfdce5;
+  --color-outline-variant: #a8b3bb;
+  --color-tertiary-container: #e5eff7;
+  --color-on-secondary: #f5f9ff;
+  --color-surface-container-high: #e1e9f0;
+  --color-on-tertiary-fixed-variant: #5a646a;
+  --color-surface-container-low: #f0f4f8;
+  --color-on-tertiary-fixed: #3e484d;
+  --color-on-tertiary: #f3faff;
+  --color-on-error-container: #752121;
+  --color-on-secondary-fixed: #31414e;
+  --color-on-surface-variant: #566168;
+  --color-surface-variant: #d9e4ec;
+  --color-error-dim: #4e0309;
+  --color-primary-container: #dde4e6;
+  --color-inverse-surface: #0b0f11;
+  --color-tertiary-fixed-dim: #d7e1e8;
+  --color-inverse-on-surface: #9a9da0;
+  --color-secondary-dim: #445562;
+  --color-surface: #f7f9fc;
+  --color-primary-dim: #4c5456;
+  --color-on-primary-container: #4c5355;
+  --color-on-tertiary-container: #505a60;
+  --color-on-background: #29343a;
+  --color-surface-container-highest: #d9e4ec;
+  --color-error: #9f403d;
+  --color-background: #f7f9fc;
+  
+  --font-headline: 'Manrope', sans-serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-label: 'Manrope', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer utilities {
+  .neumorphic-soft {
+    box-shadow: 0 20px 40px rgba(41, 52, 58, 0.06);
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Manrope', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  min-height: max(884px, 100dvh);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

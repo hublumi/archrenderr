@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#f2f9fb",
+                    "on-surface": "#29343a",
+                    "on-error": "#fff7f6",
+                    "secondary": "#50616e",
+                    "primary-fixed": "#dde4e6",
+                    "tertiary-dim": "#4b545a",
+                    "secondary-fixed-dim": "#c5d7e6",
+                    "error-container": "#fe8983",
+                    "on-primary-fixed": "#394043",
+                    "tertiary-fixed": "#e5eff7",
+                    "primary": "#586062",
+                    "tertiary": "#576067",
+                    "primary-fixed-dim": "#cfd6d8",
+                    "on-secondary-fixed-variant": "#4d5e6b",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed-variant": "#565d5f",
+                    "surface-container": "#e8eff4",
+                    "surface-bright": "#f7f9fc",
+                    "secondary-fixed": "#d3e5f5",
+                    "secondary-container": "#d3e5f5",
+                    "on-secondary-container": "#435461",
+                    "inverse-primary": "#f1f8fa",
+                    "surface-tint": "#586062",
+                    "outline": "#717c84",
+                    "surface-dim": "#cfdce5",
+                    "outline-variant": "#a8b3bb",
+                    "tertiary-container": "#e5eff7",
+                    "on-secondary": "#f5f9ff",
+                    "surface-container-high": "#e1e9f0",
+                    "on-tertiary-fixed-variant": "#5a646a",
+                    "surface-container-low": "#f0f4f8",
+                    "on-tertiary-fixed": "#3e484d",
+                    "on-tertiary": "#f3faff",
+                    "on-error-container": "#752121",
+                    "on-secondary-fixed": "#31414e",
+                    "on-surface-variant": "#566168",
+                    "surface-variant": "#d9e4ec",
+                    "error-dim": "#4e0309",
+                    "primary-container": "#dde4e6",
+                    "inverse-surface": "#0b0f11",
+                    "tertiary-fixed-dim": "#d7e1e8",
+                    "inverse-on-surface": "#9a9da0",
+                    "secondary-dim": "#445562",
+                    "surface": "#f7f9fc",
+                    "primary-dim": "#4c5456",
+                    "on-primary-container": "#4c5355",
+                    "on-tertiary-container": "#505a60",
+                    "on-background": "#29343a",
+                    "surface-container-highest": "#d9e4ec",
+                    "error": "#9f403d",
+                    "background": "#f7f9fc"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "1rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+        }
+        .neumorphic-soft {
+            box-shadow: 0 20px 40px rgba(41, 52, 58, 0.06);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-12">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl flex items-center px-6 h-16 shadow-[0_20px_40px_rgba(41,52,58,0.06)] justify-center">
+<h1 class="text-xl font-semibold tracking-tight text-slate-800"><img alt="Ateliê Nuvem Logo" class="h-10 w-auto object-contain mx-auto" src="https://lh3.googleusercontent.com/aida/ADBb0ujCUGgG2fH3y70ySITJ-ciGMSQbgp0udZ1kdaM8y8JMw1Dsrr1BUJuxf4YYJ_a1xkHkHopHiHaEi4ZZZwGyjoyEIVGAted8LpDoCRgcF9H6yLBji5ulEY6JiUEUsEQP1bW9xPa1PN7uz3ObhU-HYF-isnUf6MbEAoDQUoKoVf3yktiVRorzzVIKOfUqZceVFvz39QBFotvrt_IBZxm2YkIo_p78ZtVX1fNuDZdMVZCcfkEIKPDYTZxvahUUQ8L_N6xdSIQ9UvjDWAg"/></h1>
+</header>
+<main class="pt-24 px-6 space-y-10 max-w-2xl mx-auto">
+<!-- Hero Section -->
+<section class="space-y-2">
+<h2 class="text-3xl font-semibold text-on-background tracking-tight leading-tight">Transforme sua arte em catálogo</h2>
+<p class="text-on-surface-variant text-base">Fotos profissionais em segundos com IA</p>
+</section>
+<!-- Studio Selection -->
+<section class="space-y-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Escolha o Estúdio</h3>
+<div class="grid grid-cols-2 gap-4">
+<!-- Studio Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl neumorphic-soft border border-outline-variant/10 flex flex-col items-center text-center space-y-3 cursor-pointer group hover:bg-slate-50 transition-all duration-300">
+<div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<span class="text-sm font-semibold text-on-surface">Estúdio Limpo</span>
+</div>
+<!-- Studio Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl neumorphic-soft border border-outline-variant/10 flex flex-col items-center text-center space-y-3 cursor-pointer group hover:bg-slate-50 transition-all duration-300">
+<div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl" data-icon="filter_hdr">filter_hdr</span>
+</div>
+<span class="text-sm font-semibold text-on-surface">Estúdio Cena</span>
+</div>
+</div>
+</section>
+<!-- Upload Area -->
+<section class="space-y-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Upload do Produto</h3>
+<div class="bg-surface-container-lowest border-2 border-dashed border-outline-variant/30 rounded-xl p-10 flex flex-col items-center justify-center space-y-4 text-center neumorphic-soft">
+<div class="w-14 h-14 rounded-full bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl" data-icon="add_a_photo">add_a_photo</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-on-surface">Toque para enviar</p>
+<p class="text-xs text-on-surface-variant">Formatos JPG, PNG até 10MB</p>
+</div>
+</div>
+</section>
+<!-- Visual Angle Selector -->
+<section class="space-y-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Ângulo Visual</h3>
+<div class="flex justify-between items-center bg-surface-container-low p-2 rounded-full px-4">
+<button class="p-3 rounded-full bg-white text-on-surface shadow-sm transition-all">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+</button>
+<button class="p-3 rounded-full text-on-surface-variant hover:text-on-surface transition-all">
+<span class="material-symbols-outlined" data-icon="side_navigation">side_navigation</span>
+</button>
+<button class="p-3 rounded-full text-on-surface-variant hover:text-on-surface transition-all">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+</button>
+<button class="p-3 rounded-full text-on-surface-variant hover:text-on-surface transition-all">
+<span class="material-symbols-outlined" data-icon="rotate_left">rotate_left</span>
+</button>
+<button class="p-3 rounded-full text-on-surface-variant hover:text-on-surface transition-all">
+<span class="material-symbols-outlined" data-icon="vertical_align_top">vertical_align_top</span>
+</button>
+</div>
+<div class="flex justify-between px-2 text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-tighter">
+<span>Frontal</span>
+<span>Lateral</span>
+<span>45°</span>
+<span>Diagonal</span>
+<span>Superior</span>
+</div>
+</section>
+<!-- Color Selector -->
+<section class="space-y-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Paleta do Cenário</h3>
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-full bg-[#F5F5DC] border-2 border-white ring-2 ring-primary/20 shadow-sm cursor-pointer"></div>
+<div class="w-10 h-10 rounded-full bg-[#BCB88A] border-2 border-white shadow-sm cursor-pointer"></div>
+<div class="w-10 h-10 rounded-full bg-[#E2725B] border-2 border-white shadow-sm cursor-pointer"></div>
+<div class="w-10 h-10 rounded-full bg-[#708090] border-2 border-white shadow-sm cursor-pointer"></div>
+<div class="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-outline-variant/20 shadow-sm cursor-pointer">
+<span class="material-symbols-outlined text-xs" data-icon="palette">palette</span>
+</div>
+</div>
+</section>
+<!-- Main CTA -->
+<button class="w-full py-5 bg-primary text-on-primary rounded-full font-bold text-base neumorphic-soft active:scale-95 transition-transform duration-300 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="temp_preferences_custom">temp_preferences_custom</span>
+            Gerar Foto Profissional
+        </button>
+<!-- Preview Area -->
+<section class="space-y-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Preview do Resultado</h3>
+<div class="relative bg-surface-container-low rounded-xl aspect-square overflow-hidden neumorphic-soft border border-white">
+<img alt="Result Placeholder" class="w-full h-full object-cover opacity-60" data-alt="professional product photography of a minimalist ceramic vase on a soft sage green background with soft side lighting and elegant shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnGHrqD_k_2jv67vLI7Z7BC_tNxiUIFW93H8v0prUFLk0ZyoBsUUwPNBYgXxQbie5rn5apvFjGtRa4lbnJvB7K_s5a2ZeXAeq1s3KBd4LwNbKnqe9fYtX_60CmMpKuWWZ37K-MAB5sgwqumQ6GWzmsFD0lIOdjUU9LsXsp0mui2ODV1o5QuVwPBVkzohXmdVgFvGFur1nzqkYaUR0D0e4LS42082hJCaliy-B7v3p9Pxh0dWS86zfvh3wJmVWF4ImQInXKiCqV1ePa"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-white/80 backdrop-blur-md p-4 rounded-full shadow-lg">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="image">image</span>
+</div>
+</div>
+<button class="absolute bottom-6 right-6 w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary shadow-xl active:scale-90 transition-all">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+</button>
+</div>
+</section>
+<!-- History -->
+</main>
+<!-- BottomNavBar -->
+<style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

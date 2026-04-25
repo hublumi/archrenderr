@@ -1,0 +1,13 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import fs from "fs";
+
+async function main() {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+  const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
+
+  const result = await model.generateContent("Create a picture of a blue circle");
+  const response = await result.response;
+  console.log("Response parts:", JSON.stringify(response.candidates[0].content.parts, null, 2));
+}
+
+main();
