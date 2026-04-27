@@ -111,10 +111,10 @@ export async function generateProductImage(formData: FormData) {
     } as any);
 
     // O Agente vai raciocinar e depois disparar a 'image_generation_call'
-    const toolOutput = response.output.find((o: any) => o.type === "image_generation_call");
+    const toolOutput = (response.output as any[]).find((o: any) => o.type === "image_generation_call");
     
     if (!toolOutput) {
-      const refusal = response.output.find((o: any) => o.type === "refusal");
+      const refusal = (response.output as any[]).find((o: any) => o.type === "refusal");
       throw new Error(refusal?.content || "O agente não disparou a ferramenta de imagem.");
     }
 
