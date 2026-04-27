@@ -230,11 +230,10 @@ export default function Home() {
       formData.append("studio", "limpo");
       formData.append("color", customColor);
 
-      const result = await generateProductImage(formData);
+      const result: any = await generateProductImage(formData);
       
       if (result.success) {
         setResultImage(result.imageUrl || null);
-        setResultBackground(result.backgroundImageUrl || null);
         
         if (result.newTokens !== undefined) {
           setTokens(result.newTokens);
