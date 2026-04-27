@@ -77,85 +77,80 @@ export async function generateProductImage(formData: FormData) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const fullPrompt = `Analyze the input product image with extreme precision. Generate a highly detailed and structured description including: - exact product type - exact shape and proportions - exact colors (use precise color names, no approximations) - materials and finishes (matte, glossy, metallic, etc.) - textures and surface details - logos, texts, and branding (copy exactly if visible) - any unique visual characteristics. IMPORTANT: - Do not generalize anything - Do not simplify - Do not omit details - This description will be used to recreate the product with high fidelity. Also include: - camera angle - perspective - lighting direction (if visible)
-
-Create a hyper-realistic professional studio product photo. The product must match EXACTLY the input image and the description. STRICT RULES: - The product must be identical in shape, color, material, and details - Do not redesign or reinterpret - Do not improve or stylize the product itself STYLE: - ultra high-end commercial photography - soft diffused studio lighting - realistic shadows and reflections - perfect exposure - extremely sharp focus - 8k, ultra detailed BACKGROUND: - solid studio background in ${color} - smooth and clean - subtle gradient for realism COMPOSITION: - centered product - premium e-commerce framing - no extra objects CAMERA: - 85mm lens - professional product photography - shallow depth of field (subtle) QUALITY BOOST: - photorealistic - global illumination - ray-traced lighting - physically accurate materials. This must look like a real photograph taken in a professional studio, not a 3D render or AI-generated image.`;
-
-
-
-    // Etapa 1: Usar GPT-4o para descrever perfeitamente o produto
-    console.log("Analisando o produto com GPT-4o...");
+    console.log("Iniciando processamento com a nova Responses API (GPT-image-2)...");
     
-    const promptEtapa1 = `Analyze the input product image with extreme precision. Generate a highly detailed and structured description including: - exact product type - exact shape and proportions - exact colors (use precise color names, no approximations) - materials and finishes (matte, glossy, metallic, etc.) - textures and surface details - logos, texts, and branding (copy exactly if visible) - any unique visual characteristics. IMPORTANT: - Do not generalize anything - Do not simplify - Do not omit details - This description will be used to recreate the product with high fidelity. Also include: - camera angle - perspective - lighting direction (if visible)`;
-
-    const visionResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
+    // Na Responses API de 2026, o input é multimodal e o modelo faz o "reasoning" da imagem
+    const response = await openai.responses.create({
+      model: "gpt-5.4", // O "Cérebro" que orquestra a tarefa
+      input: [
         {
+          type: "message",
           role: "user",
           content: [
             { 
-              type: "text", 
-              text: promptEtapa1
+              type: "input_text", 
+              text: `TASK: Use your 'image_generation' tool to edit the attached product photo.
+              INSTRUCTIONS:
+              - Tool Model: Use 'gpt-image-2' for maximum quality.
+              - Action: Perform an 'edit' (image-to-image).
+              - Goal: Change the background to a professional studio setting in ${color}.
+              - Identity: The product MUST remain 100% identical in shape and color.` 
             },
             {
-              type: "image_url",
-              image_url: {
-                url: `data:${productFile.type};base64,${base64}`,
-                detail: "high"
-              }
+              type: "input_image",
+              image_url: `data:${productFile.type};base64,${base64}`
             }
           ]
         }
       ],
-      max_tokens: 500,
-    });
+      tools: [
+        {
+          type: "image_generation" // Declaramos apenas que ele PODE gerar imagens
+        }
+      ]
+    } as any);
 
-    const intelligentPrompt = visionResponse.choices[0].message.content?.trim() || "A highly detailed product photography.";
-    console.log("Descrição gerada pelo GPT-4o (Etapa 1):", intelligentPrompt);
-
-    // Etapa 2: Gerar a imagem com DALL-E 3 usando a descrição
-    console.log("Gerando imagem final com DALL-E 3 (Etapa 2)...");
+    // O Agente vai raciocinar e depois disparar a 'image_generation_call'
+    const toolOutput = response.output.find((o: any) => o.type === "image_generation_call");
     
-    let promptEtapa2 = `Create a hyper-realistic professional studio product photo. The product must match EXACTLY the following description: ${intelligentPrompt} STRICT RULES: - The product must be identical in shape, color, material, and details - Do not redesign or reinterpret - Do not improve or stylize the product itself STYLE: - ultra high-end commercial photography - soft diffused studio lighting - realistic shadows and reflections - perfect exposure - extremely sharp focus - 8k, ultra detailed BACKGROUND: - solid studio background in ${color} - smooth and clean - subtle gradient for realism COMPOSITION: - centered product - premium e-commerce framing - no extra objects CAMERA: - 85mm lens - professional product photography - shallow depth of field (subtle) QUALITY BOOST: - photorealistic - global illumination - ray-traced lighting - physically accurate materials. This must look like a real photograph taken in a professional studio, not a 3D render or AI-generated image.`;
-
-    const imageResponse = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: promptEtapa2,
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
-      response_format: "b64_json",
-    });
-
-    if (!imageResponse.data || imageResponse.data.length === 0) {
-      throw new Error("A OpenAI não retornou dados de imagem.");
+    if (!toolOutput) {
+      const refusal = response.output.find((o: any) => o.type === "refusal");
+      throw new Error(refusal?.content || "O agente não disparou a ferramenta de imagem.");
     }
 
-    const b64Json = imageResponse.data[0].b64_json;
-    if (!b64Json) throw new Error("A OpenAI não retornou a imagem base64.");
+    // Log para diagnóstico (aparecerá no seu terminal)
+    console.log("DEBUG GPT-IMAGE-2 RESULT:", JSON.stringify(toolOutput, null, 2));
 
-    const finalDataUrl = `data:image/png;base64,${b64Json}`;
+    let finalDataUrl = "";
+    const result = toolOutput.result || toolOutput.image_url?.url || toolOutput.b64_json;
 
-    // Desconta o token do usuário no banco de dados DEPOIS que a imagem foi gerada com sucesso
+    if (typeof result === "string") {
+      if (result.startsWith("http") || result.startsWith("data:")) {
+        finalDataUrl = result;
+      } else {
+        // Se for base64 pura, adicionamos o prefixo
+        finalDataUrl = `data:image/png;base64,${result}`;
+      }
+    }
+
+    if (!finalDataUrl) throw new Error("Não foi possível extrair a imagem do resultado.");
+
+    // Desconta o token do usuário
     const newTokens = profile.tokens - 1;
     await supabase.from("profiles").update({ tokens: newTokens }).eq("id", user.id);
 
     return {
       success: true,
-      imageUrl: finalDataUrl, // A imagem final com o produto e cenário
-      backgroundImageUrl: null,
+      imageUrl: finalDataUrl,
       newTokens: newTokens
     };
   } catch (error: any) {
-    console.error("Erro detalhado na integração com OpenAI:", error.message || error);
-    
-    // Libera o rate limit em caso de erro para não penalizar o usuário
+    console.error("Erro na integração com GPT-image-2:", error.message || error);
     rateLimitMap.set(identifier, now - COOLDOWN_MS + 5000); 
 
     return {
       success: false,
-      error: `Erro: ${error.message || "Verifique a configuração."}`
+      error: `Erro no Novo Modelo: ${error.message || "Verifique sua cota da OpenAI."}`
     };
   }
 }

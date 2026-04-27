@@ -24,6 +24,7 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
 
@@ -65,7 +66,7 @@ export default function Home() {
     e.preventDefault();
     setAuthError(null);
     setAuthSuccess(null);
-    setIsProcessingPayment(true);
+    setIsAuthLoading(true);
     
     if (authMode === "register") {
       const { data, error } = await supabase.auth.signUp({ 
@@ -93,7 +94,7 @@ export default function Home() {
       if (error) setAuthError(error.message);
       else setAuthSuccess("Um link de redefinição foi enviado para o seu e-mail.");
     }
-    setIsProcessingPayment(false);
+    setIsAuthLoading(false);
   };
 
   const handleLogout = async () => {
@@ -109,6 +110,17 @@ export default function Home() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [resultBackground, setResultBackground] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState<number>(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (cooldown > 0) {
+      timer = setInterval(() => {
+        setCooldown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const tokenPackages = [
     { amount: 10, price: 50, name: "10 Tokens", discount: "R$ 5,00/un" },
@@ -202,6 +214,11 @@ export default function Home() {
       return;
     }
 
+    if (cooldown > 0) {
+      setError(`Aguarde ${cooldown}s para gerar novamente.`);
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
     setResultImage(null);
@@ -224,11 +241,18 @@ export default function Home() {
         } else {
           setTokens(prev => prev - 1);
         }
+        setCooldown(15); // Sucesso inicia cooldown de 15s
       } else {
+        if (result.error?.includes("aguarde")) {
+          // Tenta extrair o número de segundos da mensagem
+          const match = result.error.match(/\d+/);
+          if (match) setCooldown(parseInt(match[0]));
+          else setCooldown(15);
+        }
         setError(result.error || "Erro ao gerar a imagem. Tente novamente.");
       }
-    } catch (err) {
-      setError("Ocorreu um erro inesperado.");
+    } catch (err: any) {
+      setError("Ocorreu um erro inesperado. Tente novamente em alguns segundos.");
     } finally {
       setIsGenerating(false);
     }
@@ -255,16 +279,21 @@ export default function Home() {
 
   if (isLoadingAuth) {
     return (
-      <div className="min-h-screen bg-surface-container-lowest flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#f7f9fc] flex flex-col items-center justify-center space-y-6">
+        <div className="relative">
+          <div className="w-20 h-20 border-2 border-primary/10 rounded-full"></div>
+          <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-primary rounded-full animate-spin"></div>
+          <img src="/logo.png" alt="Logo" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 object-contain opacity-20" />
+        </div>
+        <p className="text-sm font-medium text-on-surface-variant/60 tracking-widest uppercase animate-pulse">Carregando seu Ateliê...</p>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-surface-container-lowest flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-[0_20px_40px_rgba(41,52,58,0.06)] border border-outline-variant/10">
+      <main className="min-h-screen flex items-center justify-center p-6 bg-transparent">
+        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(41,52,58,0.08)] border border-white/50 animate-fade-in">
           <div className="text-center mb-8">
             <img src="/logo.png" alt="Logo" className="h-14 mx-auto mb-6 object-contain" />
             <h2 className="text-2xl font-bold text-on-surface">Acesse seu Ateliê</h2>
@@ -319,12 +348,19 @@ export default function Home() {
 
             <button 
               type="submit"
-              disabled={isProcessingPayment}
-              className="w-full py-3.5 mt-2 rounded-xl bg-primary text-white font-bold text-sm hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-70 flex justify-center items-center"
+              disabled={isAuthLoading}
+              className="w-full py-4 mt-2 rounded-2xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-80 flex justify-center items-center gap-2"
             >
-              {isProcessingPayment ? <span className="material-symbols-outlined animate-spin">refresh</span> : (
-                authMode === "login" ? "Entrar" : 
-                authMode === "register" ? "Criar Conta" : "Enviar Link de Recuperação"
+              {isAuthLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[20px]">
+                    {authMode === "login" ? "login" : authMode === "register" ? "person_add" : "mail"}
+                  </span>
+                  {authMode === "login" ? "Entrar no Ateliê" : 
+                   authMode === "register" ? "Criar Minha Conta" : "Enviar Recuperação"}
+                </>
               )}
             </button>
           </form>
@@ -361,9 +397,9 @@ export default function Home() {
   }
 
   return (
-    <>
+    <div className="animate-fade-in">
       {/* TopAppBar */}
-      <header className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl flex items-center justify-between px-6 h-16 shadow-[0_20px_40px_rgba(41,52,58,0.06)]">
+      <header className="fixed top-0 w-full z-50 glass flex items-center justify-between px-8 h-20">
         <div className="w-8"></div> {/* Spacer */}
         <h1 className="text-xl font-semibold tracking-tight text-slate-800 absolute left-1/2 -translate-x-1/2">
           <img 
@@ -377,10 +413,10 @@ export default function Home() {
         </button>
       </header>
 
-      <main className="pt-24 px-6 space-y-10 max-w-2xl mx-auto pb-20">
+      <main className="pt-28 px-6 space-y-12 max-w-2xl mx-auto pb-24">
         
         {/* Navegação por Abas */}
-        <div className="flex bg-surface-container-low p-1 rounded-2xl w-full max-w-[240px] mx-auto shadow-sm border border-outline-variant/10">
+        <div className="flex bg-surface-container-low/50 backdrop-blur-sm p-1.5 rounded-[1.25rem] w-full max-w-[260px] mx-auto shadow-inner border border-outline-variant/10">
           <button 
             onClick={() => setActiveTab("gerar")}
             className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === "gerar" ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
@@ -498,12 +534,16 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <button 
+                   <button 
                     onClick={handleConfirmPixPayment}
                     disabled={isProcessingPayment}
-                    className="w-full py-3 mt-2 rounded-xl bg-primary text-white font-bold text-sm hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                    className="w-full py-4 mt-2 rounded-2xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                   >
-                    <span className="material-symbols-outlined text-[18px]">{isProcessingPayment ? 'refresh' : 'check_circle'}</span>
+                    {isProcessingPayment ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                    )}
                     {isProcessingPayment ? 'Verificando...' : 'Verificar Pagamento'}
                   </button>
                   <button onClick={() => setShowPixCode(false)} className="text-xs text-on-surface-variant hover:text-primary transition-colors underline">
@@ -653,32 +693,42 @@ export default function Home() {
 
         {/* Error Message */}
         {error && (
-          <div className="p-4 bg-error-container/20 border border-error-container rounded-xl text-error text-sm font-medium text-center">
-            {error}
+          <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0 text-red-600">
+              <span className="material-symbols-outlined text-[20px]">
+                {error.includes("aguarde") ? "timer" : "error"}
+              </span>
+            </div>
+            <p className="text-sm font-semibold text-red-800 leading-tight">{error}</p>
           </div>
         )}
 
         {/* Main CTA */}
         <button 
           onClick={handleGenerate}
-          disabled={isGenerating || productImages.length === 0}
-          className={`w-full py-5 rounded-full font-bold text-base transition-all duration-500 flex items-center justify-center gap-2 ${
-            isGenerating 
-              ? "bg-surface-container-high text-on-surface-variant cursor-not-allowed" 
+          disabled={isGenerating || productImages.length === 0 || cooldown > 0}
+          className={`w-full py-6 rounded-3xl font-bold text-base transition-all duration-500 flex items-center justify-center gap-3 ${
+            isGenerating || cooldown > 0
+              ? "bg-surface-container-high text-on-surface-variant cursor-not-allowed border border-outline-variant/10" 
               : productImages.length === 0
-                ? "bg-surface-container text-on-surface-variant/40 cursor-not-allowed"
-                : "bg-gradient-to-r from-primary to-[#434b4d] text-white hover:shadow-[0_8px_30px_rgba(88,96,98,0.3)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 border-t border-white/20"
+                ? "bg-surface-container-low text-on-surface-variant/40 cursor-not-allowed grayscale border border-outline-variant/10"
+                : "bg-gradient-to-r from-[#29343a] via-[#586062] to-[#29343a] bg-[length:200%_auto] hover:bg-[100%_center] text-white shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] border-t border-white/10"
           }`}
         >
           {isGenerating ? (
             <>
-              <span className="material-symbols-outlined animate-spin">refresh</span>
-              Gerando com IA...
+              <div className="w-6 h-6 border-3 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+              <span className="tracking-wide">Criando sua obra prima...</span>
+            </>
+          ) : cooldown > 0 ? (
+            <>
+              <span className="material-symbols-outlined text-2xl">hourglass_empty</span>
+              <span className="tracking-wide">Aguarde {cooldown}s...</span>
             </>
           ) : (
             <>
-              <span className="material-symbols-outlined">temp_preferences_custom</span>
-              Gerar Foto Profissional
+              <span className="material-symbols-outlined text-2xl">magic_button</span>
+              <span className="tracking-wide">Gerar Foto de Estúdio</span>
             </>
           )}
         </button>
@@ -1052,6 +1102,6 @@ export default function Home() {
         )}
 
       </main>
-    </>
+    </div>
   );
 }
