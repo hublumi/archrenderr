@@ -111,7 +111,30 @@ export default function Home() {
   const [resultBackground, setResultBackground] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState<number>(0);
+  const [aspectRatio, setAspectRatio] = useState<string>("1:1");
+  const [loadingMessage, setLoadingMessage] = useState("Analisando seu produto...");
+  const [showEditMenu, setShowEditMenu] = useState(false);
 
+  const loadingMessages = [
+    "Analisando seu produto...",
+    "Removendo o fundo com precisão...",
+    "Ajustando a iluminação de estúdio...",
+    "Aplicando cores e texturas...",
+    "Polindo os detalhes finais...",
+    "Quase pronto! Sua foto premium está chegando...",
+  ];
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isGenerating) {
+      let index = 0;
+      interval = setInterval(() => {
+        index = (index + 1) % loadingMessages.length;
+        setLoadingMessage(loadingMessages[index]);
+      }, 4000);
+    }
+    return () => clearInterval(interval);
+  }, [isGenerating]);
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (cooldown > 0) {
@@ -203,7 +226,17 @@ export default function Home() {
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (arg?: React.FormEvent | string) => {
+    let mode: "standard" | "change_color" | "macro" = "standard";
+    
+    // Se o argumento for uma string, é um clique nos botões de edição
+    if (typeof arg === "string") {
+      mode = arg as any;
+    } else if (arg && "preventDefault" in arg) {
+      // Se for um evento de formulário
+      arg.preventDefault();
+    }
+
     if (tokens <= 0) {
       setError("Você não possui tokens. Compre tokens para gerar imagens.");
       return;
@@ -226,11 +259,20 @@ export default function Home() {
 
     try {
       const formData = new FormData();
-      productImages.forEach((img) => formData.append("product", img));
+      
+      if (!productImages || productImages.length === 0) {
+        throw new Error("Por favor, selecione uma imagem do produto primeiro.");
+      }
+
+      const productToUse = productImages[0];
+      formData.append("product", productToUse);
       formData.append("studio", "limpo");
       formData.append("color", customColor);
+      formData.append("aspect_ratio", aspectRatio);
+      formData.append("mode", mode);
 
-      const result: any = await generateProductImage(formData);
+      console.log(">>> DISPARANDO GERAÇÃO NO SERVIDOR...");
+      const result = await generateProductImage(formData) as any;
       
       if (result.success) {
         setResultImage(result.imageUrl || null);
@@ -241,6 +283,7 @@ export default function Home() {
           setTokens(prev => prev - 1);
         }
         setCooldown(15); // Sucesso inicia cooldown de 15s
+        setShowEditMenu(false);
       } else {
         if (result.error?.includes("aguarde")) {
           // Tenta extrair o número de segundos da mensagem
@@ -669,26 +712,60 @@ export default function Home() {
 
 
 
-        {/* Color Selector */}
-        <section className="space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Paleta de Fundo</h3>
-          <div className="flex gap-4 items-center pl-1 py-2">
-            <div 
-              className="w-11 h-11 rounded-full shadow-md shrink-0 transition-all ring-2 ring-primary ring-offset-4 ring-offset-background"
-              style={{ backgroundColor: customColor, border: customColor.toUpperCase() === '#FFFFFF' ? '1px solid #e1e9f0' : 'none' }}
-            />
-            
-            <label className="w-11 h-11 rounded-full bg-surface-container-lowest flex items-center justify-center border border-outline-variant/20 shadow-sm cursor-pointer shrink-0 hover:bg-surface-container hover:scale-105 transition-all relative text-primary">
-              <span className="material-symbols-outlined text-[20px]">palette</span>
-              <input 
-                type="color" 
-                value={customColor}
-                onChange={(e) => setCustomColor(e.target.value)}
-                className="absolute opacity-0 w-full h-full cursor-pointer"
+        {/* Color & Aspect Ratio Row */}
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-start w-full">
+          {/* Color Selector */}
+          <section className="space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Paleta de Fundo</h3>
+            <div className="flex gap-4 items-center pl-1 py-2">
+              <div 
+                className="w-11 h-11 rounded-full shadow-md shrink-0 transition-all ring-2 ring-primary ring-offset-4 ring-offset-background"
+                style={{ backgroundColor: customColor, border: customColor.toUpperCase() === '#FFFFFF' ? '1px solid #e1e9f0' : 'none' }}
               />
-            </label>
-          </div>
-        </section>
+              
+              <label className="w-11 h-11 rounded-full bg-surface-container-lowest flex items-center justify-center border border-outline-variant/20 shadow-sm cursor-pointer shrink-0 hover:bg-surface-container hover:scale-105 transition-all relative text-primary">
+                <span className="material-symbols-outlined text-[20px]">palette</span>
+                <input 
+                  type="color" 
+                  value={customColor}
+                  onChange={(e) => setCustomColor(e.target.value)}
+                  className="absolute opacity-0 w-full h-full cursor-pointer"
+                />
+              </label>
+            </div>
+          </section>
+
+          {/* Separator Line */}
+          <div className="hidden md:block w-px h-16 bg-outline-variant/20 self-end mb-2 mx-2"></div>
+
+          {/* Aspect Ratio Selector */}
+          <section className="space-y-4 w-full md:w-auto md:ml-auto">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60 md:text-right">Enquadramento</h3>
+            <div className="flex gap-3 overflow-visible py-2 px-1 justify-start md:justify-end">
+              {[
+                { id: "1:1", w: 16, h: 16, label: "Quadrado" },
+                { id: "3:4", w: 15, h: 20, label: "Vertical" },
+                { id: "16:9", w: 24, h: 14, label: "Horizontal" }
+              ].map((ratio) => (
+                <button
+                  key={ratio.id}
+                  onClick={() => setAspectRatio(ratio.id)}
+                  className={`flex flex-col items-center justify-center min-w-[80px] h-[72px] rounded-[1.5rem] border transition-all duration-300 ${
+                    aspectRatio === ratio.id 
+                      ? "bg-primary text-white border-primary shadow-[0_8px_16px_rgba(88,96,98,0.3)] scale-110 z-10" 
+                      : "bg-surface-container-lowest text-on-surface-variant border-outline-variant/30 hover:border-primary/40 hover:bg-slate-50"
+                  }`}
+                >
+                  <div 
+                    className={`mb-2 rounded-[4px] border-2 transition-colors ${aspectRatio === ratio.id ? "border-white" : "border-primary/30"}`}
+                    style={{ width: `${ratio.w}px`, height: `${ratio.h}px` }}
+                  />
+                  <span className="text-[9px] font-bold uppercase tracking-tight">{ratio.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
 
         {/* Error Message */}
         {error && (
@@ -735,32 +812,96 @@ export default function Home() {
         {/* Preview Area */}
         <section className={`space-y-4 transition-all duration-700 ${resultImage || isGenerating ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden hidden'}`}>
           <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Preview do Resultado</h3>
-          <div className="relative bg-surface-container-low rounded-xl aspect-square overflow-hidden neumorphic-soft border border-white">
+          <div className="relative bg-surface-container-low rounded-3xl aspect-square overflow-hidden shadow-2xl border border-white/50">
             
             {isGenerating ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-surface-container-lowest">
-                <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                <p className="text-sm font-medium text-on-surface-variant animate-pulse">Criando magia no ateliê...</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-container-lowest animate-fade-in">
+                <div className="space-y-6 text-center">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="material-symbols-outlined animate-pulse text-primary">auto_awesome</span>
+                    </div>
+                  </div>
+                  <div className="animate-fade-in px-8">
+                    <p className="text-primary font-bold text-lg mb-1">{loadingMessage}</p>
+                    <p className="text-on-surface-variant/60 text-xs italic text-balance italic">Nossa IA está esculpindo cada pixel do seu produto...</p>
+                  </div>
+                </div>
               </div>
             ) : resultImage ? (
               <>
                 <img 
                   alt="Resultado Gerado" 
-                  className="w-full h-full object-cover" 
+                  className="w-full h-full object-cover animate-fade-in" 
                   src={resultImage}
                 />
                 
-                <button 
-                  onClick={handleDownload}
-                  className="absolute bottom-6 right-6 w-14 h-14 bg-white rounded-full flex items-center justify-center text-primary shadow-xl hover:scale-105 active:scale-95 transition-all outline-none"
-                  aria-label="Baixar Imagem"
-                >
-                  <span className="material-symbols-outlined text-2xl">download</span>
-                </button>
+                {/* Download & Edit Buttons */}
+                <div className="absolute bottom-6 right-6 flex gap-3 z-50">
+                  <button 
+                    onClick={() => setShowEditMenu(!showEditMenu)}
+                    className="w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-primary shadow-xl hover:scale-110 active:scale-95 transition-all border border-primary/10"
+                    title="Edição Inteligente"
+                  >
+                    <span className="material-symbols-outlined text-[24px]">magic_button</span>
+                  </button>
+                  <button 
+                    onClick={handleDownload}
+                    className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white shadow-xl hover:scale-110 active:scale-95 transition-all"
+                    title="Baixar Imagem"
+                  >
+                    <span className="material-symbols-outlined text-[24px]">download</span>
+                  </button>
+                </div>
+
+                {/* Edit Menu Overlay */}
+                {showEditMenu && (
+                  <div className="absolute inset-0 bg-white/40 backdrop-blur-md z-40 flex items-center justify-center p-6 animate-fade-in">
+                    <div className="bg-white rounded-[2rem] shadow-2xl p-6 w-full max-w-[280px] space-y-4 border border-primary/10">
+                      <div className="flex justify-between items-center border-b border-outline-variant/20 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                          <h4 className="font-bold text-primary text-sm uppercase tracking-wider">Ações de IA</h4>
+                        </div>
+                        <button onClick={() => setShowEditMenu(false)} className="text-on-surface-variant/40 hover:text-red-500 transition-colors">
+                          <span className="material-symbols-outlined text-sm">close</span>
+                        </button>
+                      </div>
+                      
+                      <div className="grid gap-3">
+                        <button 
+                          onClick={() => handleGenerate("change_color")}
+                          className="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 hover:border-primary/60 hover:bg-white transition-all text-left group"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                            <span className="material-symbols-outlined text-[20px]">palette</span>
+                          </div>
+                          <div>
+                            <p className="text-[12px] font-bold">Trocar Cor</p>
+                            <p className="text-[10px] text-on-surface-variant/60">Aplica a cor selecionada</p>
+                          </div>
+                        </button>
+
+                        <button 
+                          onClick={() => handleGenerate("macro")}
+                          className="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/30 hover:border-primary/60 hover:bg-white transition-all text-left group"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                            <span className="material-symbols-outlined text-[20px]">center_focus_strong</span>
+                          </div>
+                          <div>
+                            <p className="text-[12px] font-bold">Foto Macro</p>
+                            <p className="text-[10px] text-on-surface-variant/60">Close-up com detalhes</p>
+                          </div>
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-center text-on-surface-variant/40 font-medium">Consome 1 token por edição</p>
+                    </div>
+                  </div>
+                )}
               </>
             ) : null}
-            
-            
           </div>
         </section>
         </div>
