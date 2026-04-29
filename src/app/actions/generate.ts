@@ -55,9 +55,9 @@ export async function generateProductImage(formData: FormData) {
       throw new Error("A API da OpenAI falhou silenciosamente ou enviou formato inválido.");
     }
 
-    const toolOutput = response.output.find((o: any) => o.type === "image_generation_call");
+    const toolOutput = (response.output as any[]).find((o: any) => o.type === "image_generation_call");
     if (!toolOutput) {
-      const refusal = response.output.find((o: any) => o.type === "refusal");
+      const refusal = (response.output as any[]).find((o: any) => o.type === "refusal");
       throw new Error(refusal?.content || "A IA recusou a geração. Verifique se a foto é legível.");
     }
 
