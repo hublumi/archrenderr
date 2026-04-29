@@ -35,6 +35,28 @@ export async function generateProductImage(formData: FormData) {
 
     const openai = new OpenAI({ apiKey });
 
+    // 1. Pré-validação de Qualidade (Evita gastos desnecessários e erro de geração)
+    console.log(">>> VALIDANDO QUALIDADE DA IMAGEM...");
+    const validation = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Analise esta imagem. É uma foto clara de um único produto que pode ser editada para um fundo de estúdio profissional? Se sim, responda apenas 'OK'. Se não (ex: muito borrada, enquadramento impossível, muitos objetos cortados, sem produto claro), explique brevemente o motivo em português começando com 'ERRO: ' sugerindo como melhorar o enquadramento." },
+            { type: "image_url", image_url: { url: `data:${product.type};base64,${base64}` } }
+          ]
+        }
+      ]
+    });
+
+    const validationText = validation.choices[0].message.content || "";
+    if (validationText.includes("ERRO:")) {
+      console.log(">>> IMAGEM REJEITADA:", validationText);
+      throw new Error(validationText.replace("ERRO: ", ""));
+    }
+    console.log(">>> QUALIDADE VALIDADA COM SUCESSO");
+
     let taskPrompt = `TASK: Maintain 100% product integrity and visual consistency. 
 - DO NOT ALTER the product's shape, labels, typography, or textures. 
 - KEEP ALL TEXT on the product exactly as shown in the reference image.
