@@ -35,9 +35,29 @@ export async function generateProductImage(formData: FormData) {
 
     const openai = new OpenAI({ apiKey });
 
-    let taskPrompt = `TASK: Use image_generation to edit this product. Background: professional studio in ${color}. Aspect ratio: ${aspectRatio}. Keep product 100% identical.`;
+    let taskPrompt = `TASK: Maintain 100% product integrity and visual consistency. 
+- DO NOT ALTER the product's shape, labels, typography, or textures. 
+- KEEP ALL TEXT on the product exactly as shown in the reference image.
+- PLACE the product in a premium, ultra-professional studio setting with a clean background in ${color}.
+- USE soft studio lighting, subtle reflections, and realistic shadows to create a high-end commercial aesthetic.
+- OUTPUT a high-resolution, sharp, and 100% realistic image.
+- ASPECT RATIO: ${aspectRatio}.`;
+
     if (mode === "macro") {
-      taskPrompt = `TASK: Use image_generation to create an EXTREME CLOSE-UP MACRO shot. Focus on details. Background: professional studio in ${color}. Aspect ratio: ${aspectRatio}.`;
+      taskPrompt = `TASK: Create a professional EXTREME CLOSE-UP (MACRO) shot.
+- ABSOLUTE CONSISTENCY REQUIRED: The product shown MUST be an exact close-up of the reference image.
+- DO NOT REIMAGINE or change the product's design, text, or branding.
+- FOCUS: Zoom in on a specific detail while maintaining 100% fidelity to the original product's appearance.
+- SETTING: Premium studio environment with a background in ${color}.
+- LIGHTING: High-end macro photography lighting to highlight fine details, textures, and typography.
+- ASPECT RATIO: ${aspectRatio}.
+- DEPTH OF FIELD: Professional shallow depth of field (bokeh) on the studio background.`;
+    } else if (mode === "change_color") {
+      taskPrompt = `TASK: Change the studio background color while keeping the product 100% identical.
+- MAINTAIN total integrity of the product's shape, labels, and typography.
+- BACKGROUND: Clean professional studio in ${color}.
+- LIGHTING: Adjust reflections and shadows to realistically match the new background color.
+- ASPECT RATIO: ${aspectRatio}.`;
     }
 
     console.log(">>> CHAMANDO OPENAI...");
