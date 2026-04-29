@@ -21,6 +21,10 @@ WORKDIR /app
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_PUBLIC_SUPABASE_URL="https://dummy.supabase.co"
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="dummy-key"
+ENV SUPABASE_URL="https://dummy.supabase.co"
+ENV SUPABASE_ANON_KEY="dummy-key"
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
