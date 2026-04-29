@@ -295,7 +295,7 @@ export default function Home() {
         }
       }
     } catch (err: any) {
-      setError("Erro de conexão ou instabilidade no servidor. Tente novamente.");
+      setError(`CRASH INTERNO: ${err.message || 'Desconhecido'}`);
     } finally {
       setIsGenerating(false);
     }

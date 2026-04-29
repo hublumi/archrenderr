@@ -26,39 +26,20 @@ export async function generateProductImage(formData: FormData) {
     const apiKey = (process.env.OPENAI_API_KEY || "").trim();
     const openai = new OpenAI({ apiKey });
 
-    // 2. Prompts Refinados (Otimizados para evitar limites de payload e gasto excessivo)
-    let taskPrompt = `TASK: Use image_generation to maintain 100% product integrity and visual consistency. 
-- DO NOT ALTER the product's shape, labels, typography, or textures. 
-- KEEP ALL TEXT on the product exactly as shown in the reference image.
-- PLACE the product in a premium, ultra-professional studio setting with a clean background in ${color}.
-- USE soft studio lighting, subtle reflections, and realistic shadows to create a high-end commercial aesthetic.
-- OUTPUT a standard web-optimized resolution image (avoid massive file sizes).
-- ASPECT RATIO: ${aspectRatio}.`;
+    // 2. Prompts Refinados em formato de linha única para evitar travamentos
+    let taskPrompt = `TASK: Use image_generation to place this product in a premium studio background in ${color} with soft lighting. Aspect ratio: ${aspectRatio}. ABSOLUTE REQUIREMENT: Keep the product's shape, typography, and textures 100% identical. OUTPUT a standard web-optimized resolution image.`;
 
     if (mode === "macro") {
-      taskPrompt = `TASK: Use image_generation to create a professional EXTREME CLOSE-UP (MACRO) shot.
-- ABSOLUTE CONSISTENCY REQUIRED: The product shown MUST be an exact close-up of the reference image.
-- DO NOT REIMAGINE or change the product's design, text, or branding.
-- FOCUS: Zoom in on a specific detail while maintaining 100% fidelity.
-- SETTING: Premium studio environment with a background in ${color}.
-- LIGHTING: High-end macro photography lighting to highlight fine details.
-- OUTPUT a standard web-optimized resolution image.
-- ASPECT RATIO: ${aspectRatio}.
-- DEPTH OF FIELD: Professional shallow depth of field (bokeh) on the studio background.`;
+      taskPrompt = `TASK: Use image_generation to create a professional EXTREME CLOSE-UP (MACRO) shot of this product. SETTING: Premium studio environment in ${color}. ABSOLUTE REQUIREMENT: Maintain 100% fidelity to the original product's typography and textures. OUTPUT a standard web-optimized resolution image.`;
     } else if (mode === "change_color") {
-      taskPrompt = `TASK: Use image_generation to change the studio background color while keeping the product 100% identical.
-- MAINTAIN total integrity of the product's shape, labels, and typography.
-- BACKGROUND: Clean professional studio in ${color}.
-- LIGHTING: Adjust reflections and shadows to realistically match the new background color.
-- OUTPUT a standard web-optimized resolution image.
-- ASPECT RATIO: ${aspectRatio}.`;
+      taskPrompt = `TASK: Use image_generation to change the studio background color to ${color}. ABSOLUTE REQUIREMENT: Keep the product 100% identical. OUTPUT a standard web-optimized resolution image.`;
     }
 
     const response = await openai.responses.create({
       model: "gpt-5.4",
       input: [
         {
-          type: "message", // <-- ISTO ESTAVA FALTANDO E CAUSANDO O ERRO EM TODAS AS FOTOS
+          type: "message",
           role: "user",
           content: [
             { type: "input_text", text: taskPrompt },
@@ -69,10 +50,15 @@ export async function generateProductImage(formData: FormData) {
       tools: [{ type: "image_generation" }]
     } as any);
 
-    const toolOutput = (response.output as any[]).find((o: any) => o.type === "image_generation_call");
+    if (!response || !response.output || !Array.isArray(response.output)) {
+      console.error(">>> RESPONSE INESPERADO:", JSON.stringify(response));
+      throw new Error("A API da OpenAI falhou silenciosamente ou enviou formato inválido.");
+    }
+
+    const toolOutput = response.output.find((o: any) => o.type === "image_generation_call");
     if (!toolOutput) {
-      const refusal = (response.output as any[]).find((o: any) => o.type === "refusal");
-      throw new Error(refusal?.content || "A IA recusou a geração. Verifique se a foto é um produto legível.");
+      const refusal = response.output.find((o: any) => o.type === "refusal");
+      throw new Error(refusal?.content || "A IA recusou a geração. Verifique se a foto é legível.");
     }
 
     let finalDataUrl = toolOutput.result || toolOutput.image_url?.url || toolOutput.b64_json;
