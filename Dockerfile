@@ -13,7 +13,7 @@ COPY . .
 # Variáveis de ambiente durante o build (opcional, melhor via painel do Cloud Run)
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN SUPABASE_URL="https://dummy.supabase.co" SUPABASE_ANON_KEY="dummy-key" NEXT_PUBLIC_SUPABASE_URL="https://dummy.supabase.co" NEXT_PUBLIC_SUPABASE_ANON_KEY="dummy-key" npm run build
+RUN SUPABASE_URL="https://frtjtiatpjrxyvnsvplb.supabase.co" SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZydGp0aWF0cGpyeHl2bnN2cGxiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNDg5MDMsImV4cCI6MjA5MjYyNDkwM30.-N-wPnceH7vy-lLlG0V7C0mzva_RTm9tHm7XKSYeA9c" NEXT_PUBLIC_SUPABASE_URL="https://frtjtiatpjrxyvnsvplb.supabase.co" NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZydGp0aWF0cGpyeHl2bnN2cGxiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNDg5MDMsImV4cCI6MjA5MjYyNDkwM30.-N-wPnceH7vy-lLlG0V7C0mzva_RTm9tHm7XKSYeA9c" npm run build
 
 # Etapa de execução
 FROM node:20-alpine AS runner
