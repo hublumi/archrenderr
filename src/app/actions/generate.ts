@@ -35,27 +35,34 @@ export async function generateProductImage(formData: FormData) {
 
     const openai = new OpenAI({ apiKey });
 
-    // 1. Pré-validação de Qualidade (Evita gastos desnecessários e erro de geração)
-    console.log(">>> VALIDANDO QUALIDADE DA IMAGEM...");
-    const validation = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Analise esta imagem. É uma foto clara de um único produto que pode ser editada para um fundo de estúdio profissional? Se sim, responda apenas 'OK'. Se não (ex: muito borrada, enquadramento impossível, muitos objetos cortados, sem produto claro), explique brevemente o motivo em português começando com 'ERRO: ' sugerindo como melhorar o enquadramento." },
-            { type: "image_url", image_url: { url: `data:${product.type};base64,${base64}` } }
-          ]
-        }
-      ]
-    });
+    // 1. Pré-validação de Qualidade (Com tratamento de erro para não travar o sistema)
+    console.log(">>> INICIANDO VALIDAÇÃO DE QUALIDADE...");
+    try {
+      const validation = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Analise esta imagem. É uma foto de um produto que pode ser editada? Se sim, responda apenas 'OK'. Se for impossível (borrada demais, sem produto), explique em português começando com 'ERRO: '." },
+              { type: "image_url", image_url: { url: `data:${product.type};base64,${base64}` } }
+            ]
+          }
+        ]
+      });
 
-    const validationText = validation.choices[0].message.content || "";
-    if (validationText.includes("ERRO:")) {
-      console.log(">>> IMAGEM REJEITADA:", validationText);
-      throw new Error(validationText.replace("ERRO: ", ""));
+      const validationText = validation.choices[0].message.content || "";
+      console.log(">>> RESPOSTA DA VALIDAÇÃO:", validationText);
+
+      if (validationText.toUpperCase().includes("ERRO:")) {
+        console.log(">>> IMAGEM REJEITADA PELA IA");
+        return { success: false, error: validationText.replace(/ERRO:/i, "").trim() };
+      }
+    } catch (vError) {
+      console.error(">>> AVISO: Falha técnica na validação, prosseguindo com a geração...", vError);
     }
-    console.log(">>> QUALIDADE VALIDADA COM SUCESSO");
+
+    console.log(">>> PROSSEGUINDO PARA GERAÇÃO...");
 
     let taskPrompt = `TASK: Maintain 100% product integrity and visual consistency. 
 - DO NOT ALTER the product's shape, labels, typography, or textures. 
