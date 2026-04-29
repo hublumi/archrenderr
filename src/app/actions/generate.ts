@@ -26,29 +26,31 @@ export async function generateProductImage(formData: FormData) {
     const apiKey = (process.env.OPENAI_API_KEY || "").trim();
     const openai = new OpenAI({ apiKey });
 
-    // 2. Prompts Refinados
-    let taskPrompt = `TASK: Maintain 100% product integrity and visual consistency. 
+    // 2. Prompts Refinados (Otimizados para evitar limites de payload e gasto excessivo)
+    let taskPrompt = `TASK: Use image_generation to maintain 100% product integrity and visual consistency. 
 - DO NOT ALTER the product's shape, labels, typography, or textures. 
 - KEEP ALL TEXT on the product exactly as shown in the reference image.
 - PLACE the product in a premium, ultra-professional studio setting with a clean background in ${color}.
 - USE soft studio lighting, subtle reflections, and realistic shadows to create a high-end commercial aesthetic.
-- OUTPUT a high-resolution, sharp, and 100% realistic image.
+- OUTPUT a standard web-optimized resolution image (avoid massive file sizes).
 - ASPECT RATIO: ${aspectRatio}.`;
 
     if (mode === "macro") {
-      taskPrompt = `TASK: Create a professional EXTREME CLOSE-UP (MACRO) shot.
+      taskPrompt = `TASK: Use image_generation to create a professional EXTREME CLOSE-UP (MACRO) shot.
 - ABSOLUTE CONSISTENCY REQUIRED: The product shown MUST be an exact close-up of the reference image.
 - DO NOT REIMAGINE or change the product's design, text, or branding.
-- FOCUS: Zoom in on a specific detail while maintaining 100% fidelity to the original product's appearance.
+- FOCUS: Zoom in on a specific detail while maintaining 100% fidelity.
 - SETTING: Premium studio environment with a background in ${color}.
-- LIGHTING: High-end macro photography lighting to highlight fine details, textures, and typography.
+- LIGHTING: High-end macro photography lighting to highlight fine details.
+- OUTPUT a standard web-optimized resolution image.
 - ASPECT RATIO: ${aspectRatio}.
 - DEPTH OF FIELD: Professional shallow depth of field (bokeh) on the studio background.`;
     } else if (mode === "change_color") {
-      taskPrompt = `TASK: Change the studio background color while keeping the product 100% identical.
+      taskPrompt = `TASK: Use image_generation to change the studio background color while keeping the product 100% identical.
 - MAINTAIN total integrity of the product's shape, labels, and typography.
 - BACKGROUND: Clean professional studio in ${color}.
 - LIGHTING: Adjust reflections and shadows to realistically match the new background color.
+- OUTPUT a standard web-optimized resolution image.
 - ASPECT RATIO: ${aspectRatio}.`;
     }
 
