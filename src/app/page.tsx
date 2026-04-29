@@ -282,19 +282,20 @@ export default function Home() {
         } else {
           setTokens(prev => prev - 1);
         }
-        setCooldown(15); // Sucesso inicia cooldown de 15s
+        setCooldown(15); 
         setShowEditMenu(false);
       } else {
+        // Prioriza a mensagem detalhada que vem da validação da IA
+        setError(result.error);
+        
         if (result.error?.includes("aguarde")) {
-          // Tenta extrair o número de segundos da mensagem
           const match = result.error.match(/\d+/);
           if (match) setCooldown(parseInt(match[0]));
           else setCooldown(15);
         }
-        setError(result.error || "Erro ao gerar a imagem. Tente novamente.");
       }
     } catch (err: any) {
-      setError("Ocorreu um erro inesperado. Tente novamente em alguns segundos.");
+      setError("Erro de conexão ou instabilidade no servidor. Tente novamente.");
     } finally {
       setIsGenerating(false);
     }
