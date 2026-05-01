@@ -58,7 +58,12 @@ export default function Home() {
       .eq("id", userId)
       .single();
     
-    if (data) setTokens(data.tokens);
+    if (error) {
+      console.error("Supabase Error:", error);
+      setError(`Erro no Banco de Dados: ${error.message} (Seu ID: ${userId.substring(0,8)}...)`);
+    } else if (data) {
+      setTokens(data.tokens);
+    }
     setIsLoadingAuth(false);
   };
 
@@ -100,7 +105,9 @@ export default function Home() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
-  const [customColor, setCustomColor] = useState<string>("#FFFFFF");
+  const [renderTime, setRenderTime] = useState<"dia" | "noite">("dia");
+  const [environment, setEnvironment] = useState<"interno" | "externo">("externo");
+
   
   const [productImages, setProductImages] = useState<File[]>([]);
   const [productPreviews, setProductPreviews] = useState<string[]>([]);
@@ -111,7 +118,6 @@ export default function Home() {
   const [resultBackground, setResultBackground] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState<number>(0);
-  const [aspectRatio, setAspectRatio] = useState<string>("1:1");
   const [loadingMessage, setLoadingMessage] = useState("Analisando seu produto...");
   const [showEditMenu, setShowEditMenu] = useState(false);
 
@@ -212,14 +218,49 @@ export default function Home() {
   };
 
 
-  const handleProductUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const resizeImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_DIM = 800; // Máximo 800px garante o custo mínimo fixo de tokens
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > MAX_DIM) {
+          height *= MAX_DIM / width;
+          width = MAX_DIM;
+        } else if (height > MAX_DIM) {
+          width *= MAX_DIM / height;
+          height = MAX_DIM;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(new File([blob], file.name, { type: "image/jpeg", lastModified: Date.now() }));
+          } else {
+            resolve(file);
+          }
+        }, "image/jpeg", 0.75); // 75% quality = super lightweight
+      };
+      img.onerror = () => resolve(file);
+    });
+  };
+
+  const handleProductUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files).slice(0, 2 - productImages.length);
       if (newFiles.length > 0) {
-        setProductImages((prev) => [...prev, ...newFiles]);
+        const resizedFiles = await Promise.all(newFiles.map(f => resizeImage(f)));
+        setProductImages((prev) => [...prev, ...resizedFiles]);
         setProductPreviews((prev) => [
           ...prev, 
-          ...newFiles.map(file => URL.createObjectURL(file))
+          ...resizedFiles.map(file => URL.createObjectURL(file))
         ]);
         setResultImage(null); // Reset result
       }
@@ -267,8 +308,8 @@ export default function Home() {
       const productToUse = productImages[0];
       formData.append("product", productToUse);
       formData.append("studio", "limpo");
-      formData.append("color", customColor);
-      formData.append("aspect_ratio", aspectRatio);
+      formData.append("render_time", renderTime);
+      formData.append("environment", environment);
       formData.append("mode", mode);
 
       console.log(">>> DISPARANDO GERAÇÃO NO SERVIDOR...");
@@ -326,7 +367,7 @@ export default function Home() {
         <div className="relative">
           <div className="w-20 h-20 border-2 border-primary/10 rounded-full"></div>
           <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-primary rounded-full animate-spin"></div>
-          <img src="/logo.png" alt="Logo" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 object-contain opacity-20" />
+          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-xs opacity-40 whitespace-nowrap text-primary">Arch Render</span>
         </div>
         <p className="text-sm font-medium text-on-surface-variant/60 tracking-widest uppercase animate-pulse">Carregando seu Ateliê...</p>
       </div>
@@ -336,9 +377,9 @@ export default function Home() {
   if (!user) {
     return (
       <main className="min-h-screen flex items-center justify-center p-6 bg-transparent">
-        <div className="w-full max-w-md bg-white/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(41,52,58,0.08)] border border-white/50 animate-fade-in">
+        <div className="w-full max-w-md glass p-10 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] border border-outline-variant/30 animate-fade-in">
           <div className="text-center mb-8">
-            <img src="/logo.png" alt="Logo" className="h-14 mx-auto mb-6 object-contain" />
+            <h1 className="text-4xl font-black text-primary mx-auto mb-6 tracking-tighter">Arch Render</h1>
             <h2 className="text-2xl font-bold text-on-surface">Acesse seu Ateliê</h2>
             <p className="text-sm text-on-surface-variant mt-2">
               {authMode === "login" && "Entre com seus dados para continuar"}
@@ -442,14 +483,10 @@ export default function Home() {
   return (
     <div className="animate-fade-in">
       {/* TopAppBar */}
-      <header className="fixed top-0 w-full z-50 glass flex items-center justify-between px-8 h-20">
+      <header className="fixed top-0 w-full z-50 glass flex items-center justify-between px-8 h-20 border-b border-outline-variant/10">
         <div className="w-8"></div> {/* Spacer */}
-        <h1 className="text-xl font-semibold tracking-tight text-slate-800 absolute left-1/2 -translate-x-1/2">
-          <img 
-            alt="Ateliê Nuvem Logo" 
-            className="h-10 w-auto object-contain" 
-            src="/logo.png" 
-          />
+        <h1 className="text-xl font-semibold tracking-tight absolute left-1/2 -translate-x-1/2">
+          <span className="text-2xl font-black text-primary tracking-tighter">Arch Render</span>
         </h1>
         <button onClick={handleLogout} className="text-on-surface-variant hover:text-error transition-colors flex items-center gap-1">
           <span className="material-symbols-outlined text-[20px]">logout</span>
@@ -462,14 +499,14 @@ export default function Home() {
         <div className="flex bg-surface-container-low/50 backdrop-blur-sm p-1.5 rounded-[1.25rem] w-full max-w-[260px] mx-auto shadow-inner border border-outline-variant/10">
           <button 
             onClick={() => setActiveTab("gerar")}
-            className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === "gerar" ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === "gerar" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
           >
             <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
             Ateliê
           </button>
           <button 
             onClick={() => setActiveTab("tutorial")}
-            className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === "tutorial" ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${activeTab === "tutorial" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
           >
             <span className="material-symbols-outlined text-[18px]">play_circle</span>
             Tutorial
@@ -550,7 +587,7 @@ export default function Home() {
                     <p className="text-xs text-on-surface-variant">Escaneie o QR Code ou copie o código</p>
                   </div>
 
-                  <div className="bg-white p-3 rounded-xl border border-outline-variant/20 shadow-sm">
+                  <div className="bg-surface-container p-3 rounded-xl border border-outline-variant/20 shadow-sm">
                     {pixData?.qrCodeBase64 ? (
                       <img src={`data:image/png;base64,${pixData.qrCodeBase64}`} alt="QR Code PIX" className="w-32 h-32 object-contain" />
                     ) : (
@@ -563,7 +600,7 @@ export default function Home() {
                     <div className="flex items-center gap-2 bg-surface-container-low p-2 rounded-lg border border-outline-variant/20">
                       <span className="text-[10px] text-on-surface font-mono truncate flex-1">{pixData?.qrCode || "Gerando código..."}</span>
                       <button 
-                        className="p-2 bg-white rounded shadow-sm text-primary hover:bg-primary hover:text-white transition-colors" 
+                        className="p-2 bg-surface-container rounded shadow-sm text-primary hover:bg-primary hover:text-white transition-colors" 
                         onClick={() => {
                           if (pixData?.qrCode) {
                             navigator.clipboard.writeText(pixData.qrCode);
@@ -640,6 +677,36 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Environment Selector */}
+        <section className="space-y-4 w-full mb-8">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60 text-center">Ambiente do Projeto</h3>
+          <div className="flex gap-3 overflow-visible py-2 px-1 justify-center">
+            <button
+              onClick={() => setEnvironment("interno")}
+              className={`flex flex-col items-center justify-center min-w-[120px] h-[72px] rounded-[1.5rem] border transition-all duration-300 ${
+                environment === "interno" 
+                  ? "bg-primary text-white border-primary shadow-[0_8px_16px_rgba(56,189,248,0.3)] scale-110 z-10" 
+                  : "bg-surface-container-lowest text-on-surface-variant border-outline-variant/30 hover:border-primary/40 hover:bg-surface-container"
+              }`}
+            >
+              <span className="material-symbols-outlined mb-1 text-2xl">chair</span>
+              <span className="text-[11px] font-bold uppercase tracking-tight">Área Interna</span>
+            </button>
+            
+            <button
+              onClick={() => setEnvironment("externo")}
+              className={`flex flex-col items-center justify-center min-w-[120px] h-[72px] rounded-[1.5rem] border transition-all duration-300 ${
+                environment === "externo" 
+                  ? "bg-primary text-white border-primary shadow-[0_8px_16px_rgba(56,189,248,0.3)] scale-110 z-10" 
+                  : "bg-surface-container-lowest text-on-surface-variant border-outline-variant/30 hover:border-primary/40 hover:bg-surface-container"
+              }`}
+            >
+              <span className="material-symbols-outlined mb-1 text-2xl">domain</span>
+              <span className="text-[11px] font-bold uppercase tracking-tight">Fachada Externa</span>
+            </button>
+          </div>
+        </section>
+
         {/* Upload Area */}
         <section className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Upload do Produto {productPreviews.length > 0 && <span className="text-primary normal-case ml-1">({productPreviews.length}/2)</span>}</h3>
@@ -666,7 +733,7 @@ export default function Home() {
                         setProductPreviews(prev => prev.filter((_, i) => i !== index));
                         setProductImages(prev => prev.filter((_, i) => i !== index)); 
                       }}
-                      className="absolute top-4 right-4 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md text-error hover:scale-110 active:scale-95 transition-transform border border-outline-variant/10"
+                      className="absolute top-4 right-4 w-8 h-8 bg-surface-container/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md text-error hover:scale-110 active:scale-95 transition-transform border border-outline-variant/10"
                     >
                       <span className="material-symbols-outlined text-sm">close</span>
                     </button>
@@ -713,60 +780,35 @@ export default function Home() {
 
 
 
-        {/* Color & Aspect Ratio Row */}
-        <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-start w-full">
-          {/* Color Selector */}
-          <section className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60">Paleta de Fundo</h3>
-            <div className="flex gap-4 items-center pl-1 py-2">
-              <div 
-                className="w-11 h-11 rounded-full shadow-md shrink-0 transition-all ring-2 ring-primary ring-offset-4 ring-offset-background"
-                style={{ backgroundColor: customColor, border: customColor.toUpperCase() === '#FFFFFF' ? '1px solid #e1e9f0' : 'none' }}
-              />
-              
-              <label className="w-11 h-11 rounded-full bg-surface-container-lowest flex items-center justify-center border border-outline-variant/20 shadow-sm cursor-pointer shrink-0 hover:bg-surface-container hover:scale-105 transition-all relative text-primary">
-                <span className="material-symbols-outlined text-[20px]">palette</span>
-                <input 
-                  type="color" 
-                  value={customColor}
-                  onChange={(e) => setCustomColor(e.target.value)}
-                  className="absolute opacity-0 w-full h-full cursor-pointer"
-                />
-              </label>
-            </div>
-          </section>
-
-          {/* Separator Line */}
-          <div className="hidden md:block w-px h-16 bg-outline-variant/20 self-end mb-2 mx-2"></div>
-
-          {/* Aspect Ratio Selector */}
-          <section className="space-y-4 w-full md:w-auto md:ml-auto">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60 md:text-right">Enquadramento</h3>
-            <div className="flex gap-3 overflow-visible py-2 px-1 justify-start md:justify-end">
-              {[
-                { id: "1:1", w: 16, h: 16, label: "Quadrado" },
-                { id: "3:4", w: 15, h: 20, label: "Vertical" },
-                { id: "16:9", w: 24, h: 14, label: "Horizontal" }
-              ].map((ratio) => (
-                <button
-                  key={ratio.id}
-                  onClick={() => setAspectRatio(ratio.id)}
-                  className={`flex flex-col items-center justify-center min-w-[80px] h-[72px] rounded-[1.5rem] border transition-all duration-300 ${
-                    aspectRatio === ratio.id 
-                      ? "bg-primary text-white border-primary shadow-[0_8px_16px_rgba(88,96,98,0.3)] scale-110 z-10" 
-                      : "bg-surface-container-lowest text-on-surface-variant border-outline-variant/30 hover:border-primary/40 hover:bg-slate-50"
-                  }`}
-                >
-                  <div 
-                    className={`mb-2 rounded-[4px] border-2 transition-colors ${aspectRatio === ratio.id ? "border-white" : "border-primary/30"}`}
-                    style={{ width: `${ratio.w}px`, height: `${ratio.h}px` }}
-                  />
-                  <span className="text-[9px] font-bold uppercase tracking-tight">{ratio.label}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        </div>
+        {/* Render Time Selector */}
+        <section className="space-y-4 w-full">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant/60 text-center">Clima do Render</h3>
+          <div className="flex gap-3 overflow-visible py-2 px-1 justify-center">
+            <button
+              onClick={() => setRenderTime("dia")}
+              className={`flex flex-col items-center justify-center min-w-[120px] h-[72px] rounded-[1.5rem] border transition-all duration-300 ${
+                renderTime === "dia" 
+                  ? "bg-primary text-white border-primary shadow-[0_8px_16px_rgba(56,189,248,0.3)] scale-110 z-10" 
+                  : "bg-surface-container-lowest text-on-surface-variant border-outline-variant/30 hover:border-primary/40 hover:bg-surface-container"
+              }`}
+            >
+              <span className="material-symbols-outlined mb-1 text-2xl">light_mode</span>
+              <span className="text-[11px] font-bold uppercase tracking-tight">Render de Dia</span>
+            </button>
+            
+            <button
+              onClick={() => setRenderTime("noite")}
+              className={`flex flex-col items-center justify-center min-w-[120px] h-[72px] rounded-[1.5rem] border transition-all duration-300 ${
+                renderTime === "noite" 
+                  ? "bg-primary text-white border-primary shadow-[0_8px_16px_rgba(56,189,248,0.3)] scale-110 z-10" 
+                  : "bg-surface-container-lowest text-on-surface-variant border-outline-variant/30 hover:border-primary/40 hover:bg-surface-container"
+              }`}
+            >
+              <span className="material-symbols-outlined mb-1 text-2xl">dark_mode</span>
+              <span className="text-[11px] font-bold uppercase tracking-tight">Render de Tarde</span>
+            </button>
+          </div>
+        </section>
 
         {/* Error Message */}
         {error && (

@@ -11,8 +11,8 @@ export async function generateProductImage(formData: FormData) {
     if (!user) throw new Error("Usuário não logado");
 
     const product = formData.get("product");
-    const color = formData.get("color") || "#FFFFFF";
-    const aspectRatio = formData.get("aspect_ratio") || "1:1";
+    const environment = formData.get("environment") || "externo";
+    const renderTime = formData.get("render_time") || "dia";
     const mode = formData.get("mode") || "standard";
 
     if (!product || !(product instanceof File)) throw new Error("Arquivo inválido");
@@ -26,13 +26,23 @@ export async function generateProductImage(formData: FormData) {
     const apiKey = (process.env.OPENAI_API_KEY || "").trim();
     const openai = new OpenAI({ apiKey });
 
-    // 2. Prompts Refinados em formato de linha única para evitar travamentos
-    let taskPrompt = `TASK: Use image_generation to place this product in a premium studio background in ${color} with soft lighting. Aspect ratio: ${aspectRatio}. ABSOLUTE REQUIREMENT: Keep the product's shape, typography, and textures 100% identical. OUTPUT a standard web-optimized resolution image.`;
+    // Configurando a iluminação de acordo com o botão clicado
+    const lightingCondition = renderTime === "noite" 
+      ? "golden hour, late afternoon fading into dusk, warm sunset light, soft blue hour sky, illuminated interior warm lights, not too dark"
+      : "bright broad daylight, natural sunlight, clear blue sky, realistic sunny architectural lighting";
+
+    let taskPrompt = "";
+    if (environment === "interno") {
+      taskPrompt = `TASK: Photorealistic interior architectural photograph. STRICT: Preserve 100% original geometric structure, camera angle, furniture layout. MATERIALS: Render existing materials (wood, stone, glass) with extreme physical accuracy, natural reflections. ENVIRONMENT: Convert white/abstract outdoor shapes into lush green jungle landscape. STYLE: Real photo, DSLR, high-end magazine, NOT a 3D render. LIGHTING: ${lightingCondition}.`;
+    } else {
+      taskPrompt = `TASK: Photorealistic exterior architectural photograph. STRICT: Preserve 100% original building envelope, geometry, scale. MATERIALS: Render existing materials with extreme physical accuracy, realistic weathering. ENVIRONMENT: Convert abstract shapes into photorealistic surrounding landscape. STYLE: Real photo, tilt-shift DSLR, NOT a 3D render. LIGHTING: ${lightingCondition}.`;
+    }
+
+    console.log(`>>> GERAÇÃO SOLICITADA. Ambiente: ${environment} | Clima: ${renderTime}`);
+    console.log(`>>> PROMPT: ${taskPrompt}`);
 
     if (mode === "macro") {
-      taskPrompt = `TASK: Use image_generation to create a professional EXTREME CLOSE-UP (MACRO) shot of this product. SETTING: Premium studio environment in ${color}. ABSOLUTE REQUIREMENT: Maintain 100% fidelity to the original product's typography and textures. OUTPUT a standard web-optimized resolution image.`;
-    } else if (mode === "change_color") {
-      taskPrompt = `TASK: Use image_generation to change the studio background color to ${color}. ABSOLUTE REQUIREMENT: Keep the product 100% identical. OUTPUT a standard web-optimized resolution image.`;
+      taskPrompt = `TASK: Use image_generation to create a professional EXTREME CLOSE-UP detail shot of this architecture. SETTING: ${lightingCondition}. ABSOLUTE REQUIREMENT: Maintain original structural shape but apply the new lighting.`;
     }
 
     const response = await openai.responses.create({
@@ -43,7 +53,7 @@ export async function generateProductImage(formData: FormData) {
           role: "user",
           content: [
             { type: "input_text", text: taskPrompt },
-            { type: "input_image", image_url: `data:${product.type};base64,${base64}` }
+            { type: "input_image", image_url: `data:${product.type};base64,${base64}`, detail: "low" }
           ]
         }
       ],
